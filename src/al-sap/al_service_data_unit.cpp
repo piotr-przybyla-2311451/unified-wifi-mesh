@@ -2,6 +2,11 @@
 #include "al_service_exception.h"
 #include "al_service_utils.h"
 
+// is fragment + is last fragment + fragment id
+#define FRAGMENTS_SIZE 3
+// Check minimum size (4 bytes for size, 6 bytes each for source and destination MAC, plus 3 bytes for flags and fragment ID)
+#define MIN_PACKET_SIZE 19
+
 AlServiceDataUnit::AlServiceDataUnit() {
     sourceAlMacAddress.fill(0);
     destinationAlMacAddress.fill(0);
@@ -41,8 +46,7 @@ std::vector<unsigned char> AlServiceDataUnit::serialize() const {
     std::vector<unsigned char> serializedData;
 
     // Calculate SDU size
-    uint32_t fragments_size = 3;// is fragment + is last fragment + fragment id
-    uint32_t packet_size = sourceAlMacAddress.size() + destinationAlMacAddress.size() + fragments_size + payload.size();
+    uint32_t packet_size = sourceAlMacAddress.size() + destinationAlMacAddress.size() + FRAGMENTS_SIZE + payload.size();
 
     // put 32bit size as 8bit
     serializedData = convert_u32_into_bytes(packet_size);
@@ -70,8 +74,8 @@ std::vector<unsigned char> AlServiceDataUnit::serialize() const {
 
 // Deserialization method
 void AlServiceDataUnit::deserialize(const std::vector<unsigned char>& data) {
-    // Check minimum size (4 bytes for size, 6 bytes each for source and destination MAC, plus 3 bytes for flags and fragment ID)
-    if (data.size() < 19) {
+
+    if (data.size() < MIN_PACKET_SIZE) {
         throw AlServiceException("Insufficient data to deserialize AlServiceDataUnit", PrimitiveError::DeserializationError);
     }
 
